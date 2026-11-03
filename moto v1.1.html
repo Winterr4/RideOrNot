@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Moto?">
+<meta name="theme-color" content="#1e1b4b">
+<title>¿Hoy en moto? 🏍️</title>
+<style>
+:root{--bg:#1e1b4b;--card:#2e2a63;--card2:#3b3676;--acc:#a78bfa;--txt:#f5f3ff;--mut:#c4b5fd}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(circle at top,#3730a3,#1e1b4b 65%);color:var(--txt);min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+header{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;position:sticky;top:0;background:#1e1b4bdd;backdrop-filter:blur(10px);z-index:5}
+header h1{font-size:1.1rem;margin:0;flex:1}
+main{padding:6px 14px 40px;max-width:580px;margin:auto}
+.view{display:none}.view.on{display:block}
+.card{background:var(--card);border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 8px 24px #0005}
+.h{font-weight:800;margin:0 0 10px}
+.muted{color:var(--mut);font-size:.85rem}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.wide{grid-column:1/-1}
+.chip{background:var(--card2);border-radius:16px;padding:12px;text-align:center}
+.chip b{display:block;font-size:1.2rem;margin:2px 0}
+.chip small{color:var(--mut)}
+.verdict{text-align:center;font-size:2.6rem;font-weight:900;padding:20px;border-radius:22px;margin-bottom:8px}
+.yes{background:linear-gradient(135deg,#14532d,#22c55e66)}
+.no{background:linear-gradient(135deg,#7f1d1d,#ef444466)}
+.btn{background:var(--acc);color:#1e1b4b;border:0;border-radius:14px;padding:12px 14px;font-weight:700;cursor:pointer;font-size:.95rem}
+.ghost{background:var(--card2);color:var(--txt)}
+input[type=text],input[type=number],input[type=date],select,textarea{background:var(--bg);color:var(--txt);border:1px solid var(--acc);border-radius:12px;padding:10px;font-size:1rem;width:100%;font-family:inherit}
+input[type=range]{width:100%;accent-color:var(--acc)}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--acc)}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+.kpi{margin:12px 0}.kpi label{display:flex;justify-content:space-between;font-size:.95rem;margin-bottom:4px}
+.toggle{display:flex;justify-content:space-between;align-items:center;margin:14px 0}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:270px;background:#17143fF5;transform:translateX(-105%);transition:.25s;z-index:20;padding:calc(20px + env(safe-area-inset-top)) 16px;box-shadow:8px 0 30px #0008}
+.drawer.open{transform:none}
+.drawer button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--txt);font-size:1.05rem;padding:13px;border-radius:14px;cursor:pointer}
+.drawer button.on,.drawer button:hover{background:var(--card)}
+.scrim{position:fixed;inset:0;background:#0008;opacity:0;pointer-events:none;transition:.25s;z-index:15}
+.scrim.open{opacity:1;pointer-events:auto}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
+.days button{flex:0 0 auto;background:var(--card2);color:var(--txt);border:0;border-radius:12px;padding:8px 10px;cursor:pointer;font-size:.85rem}
+.days button.on{background:var(--acc);color:#1e1b4b;font-weight:700}
+.hr{display:grid;grid-template-columns:40px 84px 1fr 38px 24px 22px;gap:6px;align-items:center;padding:7px 2px;border-bottom:1px solid #ffffff14;font-size:.88rem}
+.hr.out{opacity:.35}
+.bar{height:8px;background:#ffffff1a;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#a78bfa)}
+.arr{display:inline-block;transition:.3s}
+.strip{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:10px}
+.strip div{height:30px;border-radius:8px;font-size:.7rem;display:flex;align-items:center;justify-content:center;color:#fffc}
+.g{background:#22c55e}.r{background:#ef4444}.n{background:#ffffff1a}
+.dcard{background:var(--card2);border-radius:16px;padding:12px;margin-bottom:10px}
+.dcard.best{box-shadow:0 0 0 2px #facc15}
+.sbar{height:10px;background:#ffffff1a;border-radius:8px;overflow:hidden;margin:8px 0 4px}
+.sbar i{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#facc15)}
+.pill{display:inline-block;background:#facc15;color:#1e1b4b;border-radius:10px;padding:2px 8px;font-size:.75rem;font-weight:800}
+.exp button{font-size:1.6rem;background:var(--card2);border:2px solid transparent;border-radius:14px;padding:6px 4px;cursor:pointer}
+.exp button.on{border-color:var(--acc);transform:scale(1.08)}
+.entry{background:var(--card2);border-radius:16px;padding:12px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<header>
+  <button class="btn ghost" id="menu">☰</button>
+  <h1 id="title">🏠 Hoy</h1>
+  <span class="muted" id="status">🛰️</span>
+</header>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <h2 style="margin:4px 0 14px">🏍️ Menú</h2>
+  <button data-v="hoy">🏠 Hoy</button>
+  <button data-v="pron">🌤️ Pronóstico</button>
+  <button data-v="horas">⏰ Mis horas</button>
+  <button data-v="ciudades">🗺️ Ciudades</button>
+  <button data-v="hist">📓 Historial</button>
+  <button data-v="perfil">⚙️ Mis KPIs</button>
+</aside>
+
+<main>
+  <section class="view" id="v-hoy"></section>
+  <section class="view" id="v-pron"></section>
+  <section class="view" id="v-horas"></section>
+  <section class="view" id="v-ciudades"></section>
+
+  <section class="view" id="v-hist">
+    <div class="card">
+      <p class="h">✍️ Nueva salida</p>
+      <input type="date" id="hDate">
+      <input type="text" id="hPlace" placeholder="Dónde (ruta, puerto, ciudad...)" style="margin-top:8px">
+      <p class="muted" style="margin:12px 0 6px">¿Qué tal fue? 🎢</p>
+      <div class="exp row" id="hExp">
+        <button data-exp="0" title="Malo">😵</button>
+        <button data-exp="1" title="Regular">😕</button>
+        <button data-exp="2" class="on" title="Bien">🙂</button>
+        <button data-exp="3" title="Muy bien">😎</button>
+        <button data-exp="4" title="Épico">🤩</button>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <input type="number" id="kR" placeholder="🌧️ lluvia %">
+        <input type="number" id="kG" placeholder="💨 racha km/h">
+        <input type="number" id="kT" placeholder="🌡️ temp máx">
+        <input type="number" id="kF" placeholder="🥵 sensación máx">
+      </div>
+      <textarea id="hNote" rows="3" placeholder="Notas: curvas, frío en manos, café de después..." style="margin-top:10px"></textarea>
+      <button class="btn" id="hsave" style="width:100%;margin-top:10px">💾 Guardar salida</button>
+    </div>
+    <div id="hstats"></div>
+    <div id="hlist"></div>
+  </section>
+
+  <section class="view" id="v-perfil">
+    <div class="card">
+      <p class="h">⚙️ Mis KPIs máximos</p>
+      <div class="kpi"><label>🌧️ Lluvia máx. <b id="lpr"></b></label><input type="range" id="pr" min="0" max="100" step="5"></div>
+      <div class="kpi"><label>💨 Racha máx. <b id="lpg"></b></label><input type="range" id="pg" min="10" max="100" step="5"></div>
+      <div class="kpi"><label>🥶 Temp. mínima <b id="lpt1"></b></label><input type="range" id="pt1" min="-5" max="20"></div>
+      <div class="kpi"><label>🥵 Temp. máxima <b id="lpt2"></b></label><input type="range" id="pt2" min="15" max="40"></div>
+      <div class="kpi"><label>🌡️ Sensación mínima <b id="lpf1"></b></label><input type="range" id="pf1" min="-5" max="20"></div>
+      <div class="kpi"><label>🌡️ Sensación máxima <b id="lpf2"></b></label><input type="range" id="pf2" min="15" max="45"></div>
+      <div class="kpi"><label>🧭 Viento del norte desde <b id="lpk"></b></label><input type="range" id="pk" min="0" max="50" step="5"></div>
+      <div class="toggle"><span>🧭 Evitar viento del norte</span><input type="checkbox" id="pn"></div>
+      <p class="muted">Viento del norte = viene de 315º a 45º. Solo cuenta si supera la velocidad de arriba. 🌬️</p>
+    </div>
+    <button class="btn ghost" id="preset" style="width:100%">🔄 Restaurar valores</button>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const EXP = [['😵','Malo'],['😕','Regular'],['🙂','Bien'],['😎','Muy bien'],['🤩','Épico']];
+const DEF = {rain:30,gust:45,tmin:8,tmax:30,fmin:5,fmax:32,noNorth:true,northKmh:15};
+const MAP = {pr:'rain',pg:'gust',pt1:'tmin',pt2:'tmax',pf1:'fmin',pf2:'fmax',pk:'northKmh'};
+const UNI = {pr:'%',pg:' km/h',pt1:'ºC',pt2:'ºC',pf1:'ºC',pf2:'ºC',pk:' km/h'};
+const TITLES = {hoy:'🏠 Hoy',pron:'🌤️ Pronóstico',horas:'⏰ Mis horas',ciudades:'🗺️ Ciudades',hist:'📓 Historial',perfil:'⚙️ Mis KPIs'};
+
+function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}}
+function save(){try{localStorage.setItem('moto_win',JSON.stringify(S.win));localStorage.setItem('moto_profile',JSON.stringify(S.P));localStorage.setItem('moto_logs',JSON.stringify(S.logs));localStorage.setItem('moto_favs',JSON.stringify(S.favs))}catch(e){}}
+
+const S = {
+  view:'hoy', loc:{name:'Ribadeo',lat:43.54,lon:-7.04}, w:null,
+  win:load('moto_win',{a:9,b:21}),
+  P:Object.assign({},DEF,load('moto_profile',{})),
+  logs:load('moto_logs',[]), favs:load('moto_favs',[]),
+  day:0, mode:'dia', exp:2, found:[]
+};
+
+const pad = n => String(n).padStart(2,'0');
+const todayKey = () => new Date().toLocaleDateString('sv');
+const hr = t => +t.slice(11,13);
+const compass = d => ['N','NE','E','SE','S','SO','O','NO'][Math.round(d/45)%8];
+const fromN = d => d>=315 || d<=45;
+const arrow = d => `<span class="arr" style="transform:rotate(${(d+180)%360}deg)">⬆️</span>`;
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dayName = (d,short) => { const x=new Date(d+'T12:00'); const n=DIAS[x.getDay()]; return short ? n.slice(0,3)+' '+x.getDate() : n[0].toUpperCase()+n.slice(1)+' '+x.getDate(); };
+
+/* ---------- TIEMPO (con reintentos y caché) ---------- */
+async function getWeather(lat,lon){
+  const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,apparent_temperature,precipitation_probability,wind_speed_10m,wind_gusts_10m,wind_direction_10m&timezone=auto&forecast_days=7&wind_speed_unit=kmh`;
+  const key = 'moto_wx_'+lat+'_'+lon;
+  let j = null, lastErr = null;
+  for(let i=0;i<3 && !j;i++){
+    try{
+      const r = await fetch(u);
+      const data = await r.json();
+      if(data.error) throw new Error(data.reason || 'servicio saturado');
+      j = data;
+    }catch(e){
+      lastErr = e;
+      if(i<2) await new Promise(res=>setTimeout(res, 1500*(i+1)));
+    }
+  }
+  if(!j){
+    const cached = load(key,null);
+    if(cached){ $('status').textContent='📦 Datos guardados (sin conexión)'; return cached; }
+    throw lastErr;
+  }
+  const h = j.hourly;
+  const out = {t:h.time, temp:h.temperature_2m, feels:h.apparent_temperature,
+    rain:h.precipitation_probability.map(v=>v||0), wind:h.wind_speed_10m,
+    gust:h.wind_gusts_10m, dir:h.wind_direction_10m};
+  try{ localStorage.setItem(key, JSON.stringify(out)); }catch(e){}
+  return out;
+}
+
+function fails(i){
+  const P=S.P, W=S.w, f=[];
+  if(W.rain[i]>P.rain) f.push('🌧️');
+  if(W.gust[i]>P.gust) f.push('💨');
+  if(W.temp[i]<P.tmin) f.push('🥶');
+  if(W.temp[i]>P.tmax) f.push('🥵');
+  if(W.feels[i]<P.fmin || W.feels[i]>P.fmax) f.push('🌡️');
+  if(P.noNorth && fromN(W.dir[i]) && W.wind[i]>P.northKmh) f.push('🧭');
+  return f;
+}
+function dayIdx(day){const o=[];S.w.t.forEach((t,i)=>{if(t.startsWith(day))o.push(i)});return o;}
+function winIdx(day){return dayIdx(day).filter(i=>hr(S.w.t[i])>=S.win.a && hr(S.w.t[i])<=S.win.b);}
+function days(){return [...new Set(S.w.t.map(t=>t.slice(0,10)))];}
+function score(day){const ix=winIdx(day);return ix.length?ix.filter(i=>!fails(i).length).length/ix.length:0;}
+function ranking(){return days().map(d=>({d,s:score(d)})).sort((a,b)=>b.s-a.s);}
+function dayStats(idx){
+  const g=k=>idx.map(i=>S.w[k][i]);
+  return {rain:Math.max(...g('rain')),gust:Math.max(...g('gust')),tmin:Math.min(...g('temp')),
+          tmax:Math.max(...g('temp')),fmin:Math.min(...g('feels')),fmax:Math.max(...g('feels'))};
+}
+function bestRun(day){
+  let best=[],cur=[];
+  winIdx(day).forEach(i=>{ if(!fails(i).length){cur.push(i); if(cur.length>best.length) best=[...cur];} else cur=[]; });
+  return best;
+}
+function runText(run){ return `${pad(hr(S.w.t[run[0]]))}:00 → ${pad(hr(S.w.t[run[run.length-1]])+1)}:00`; }
+
+async function loadLoc(loc){
+  S.loc=loc; $('status').textContent='🛰️ Mirando el cielo...';
+  try{
+    S.w=await getWeather(loc.lat,loc.lon);
+    $('status').textContent='📍 '+loc.name; prefill();
+  }catch(e){
+    console.error(e);
+    $('status').innerHTML='🌩️ Sin conexión <button class="btn ghost" id="retry" style="padding:4px 8px">🔁</button>';
+  }
+  renderCur();
+}
+
+/* ---------- VISTAS ---------- */
+function vHoy(){
+  if(!S.w) return '<div class="card">🛰️ Cargando el cielo...</div>';
+  const td=todayKey(), ix=winIdx(td);
+  if(!ix.length) return '<div class="card">😴 Hoy no hay horas en tu franja.</div>';
+  const reasons=new Set(); ix.forEach(i=>fails(i).forEach(f=>reasons.add(f)));
+  const ok=!reasons.size, st=dayStats(ix);
+  const peak=ix.reduce((a,b)=>S.w.gust[b]>S.w.gust[a]?b:a);
+  const run=bestRun(td);
+  const top=ranking().slice(0,3);
+  return `
+  <div class="card">
+    <div class="verdict ${ok?'yes':'no'}">${ok?'¡SÍ! 🏍️💨':'NO 🛑'}</div>
+    <p class="muted" style="text-align:center;margin:0">${ok?'Todo dentro de tus KPIs. ¡Casco puesto! 🤩':'Fallan: '+[...reasons].join(' ')}</p>
+  </div>
+  <div class="grid">
+    <div class="chip">🌧️<b>${st.rain}%</b><small>prob. lluvia</small></div>
+    <div class="chip">💨<b>${Math.round(st.gust)}</b><small>racha km/h</small></div>
+    <div class="chip">🌡️<b>${Math.round(st.fmin)}–${Math.round(st.fmax)}º</b><small>sensación</small></div>
+    <div class="chip">${arrow(S.w.dir[peak])}<b>${compass(S.w.dir[peak])}</b><small>${fromN(S.w.dir[peak])?'¡viene del norte! 🧭':'viento en racha máx.'}</small></div>
+  </div>
+  <div class="card"><p class="h">⏱️ Mejor franja hoy</p>${run.length?`<b>${runText(run)}</b> 🎯 <span class="muted">(${run.length}h seguidas)</span>`:'Ninguna franja libre hoy 😵'}</div>
+  <div class="card"><p class="h">🏆 Mejores días de la semana</p>
+    ${top.map((x,i)=>`<div class="row" style="margin:6px 0"><span>${['🥇','🥈','🥉'][i]} ${dayName(x.d)}</span><span class="muted">${Math.round(x.s*100)}% OK</span></div>`).join('')}
+  </div>`;
+}
+
+function row(i){
+  const t=S.w.t[i], f=fails(i), inW=hr(t)>=S.win.a && hr(t)<=S.win.b;
+  return `<div class="hr ${inW?'':'out'}">
+    <span>${pad(hr(t))}h</span>
+    <span>${Math.round(S.w.temp[i])}º <small class="muted">(${Math.round(S.w.feels[i])})</small></span>
+    <div class="bar"><i style="width:${S.w.rain[i]}%"></i></div>
+    <span>${Math.round(S.w.gust[i])}</span>
+    ${arrow(S.w.dir[i])}
+    <span>${f.length?'🛑':'✅'}</span>
+  </div>`;
+}
+function vPron(){
+  if(!S.w) return '<div class="card">🛰️ Cargando...</div>';
+  const ds=days();
+  const seg=`<div class="row" style="margin:12px 0">
+    <button class="btn ${S.mode==='dia'?'':'ghost'}" data-m="dia">📅 Por horas</button>
+    <button class="btn ${S.mode==='semana'?'':'ghost'}" data-m="semana">🗓️ Semana</button></div>`;
+  if(S.mode==='semana'){
+    const top=ranking().slice(0,2).filter(x=>x.s>=.8).map(x=>x.d);
+    const cards=ds.map(d=>{
+      const ix=winIdx(d); if(!ix.length) return '';
+      const st=dayStats(ix), s=score(d);
+      return `<div class="dcard ${top.includes(d)?'best':''}">
+        <div class="row"><b>${dayName(d)}</b>${top.includes(d)?'<span class="pill">⭐ Mejor día</span>':''}</div>
+        <div class="muted" style="margin-top:6px">🌡️ ${Math.round(st.tmin)}–${Math.round(st.tmax)}º · 🌧️ ${st.rain}% · 💨 ${Math.round(st.gust)} km/h</div>
+        <div class="sbar"><i style="width:${s*100}%"></i></div>
+        <div class="muted">${Math.round(s*100)}% de tu franja OK</div></div>`;
+    }).join('');
+    return seg+cards+(top.length?`<p class="muted">🔔 Aviso: los mejores días para rodar son ${top.map(d=>dayName(d)).join(' y ')}.</p>`:'');
+  }
+  const d=ds[S.day]||ds[0];
+  const tabs=`<div class="days">${ds.map((x,i)=>`<button data-day="${i}" class="${i===S.day?'on':''}">${dayName(x,true)}</button>`).join('')}</div>`;
+  return seg+tabs+`<div class="card">
+    <div class="hr" style="font-size:.7rem;opacity:.7"><span>Hora</span><span>Temp</span><span>🌧️ prob.</span><span>💨</span><span>🧭</span><span></span></div>
+    ${dayIdx(d).map(row).join('')}</div>`;
+}
+
+function vHoras(){
+  if(!S.w) return '<div class="card">🛰️ Cargando...</div>';
+  const ds=days(), d=ds[S.day]||ds[0];
+  const opts=h=>Array.from({length:24},(_,k)=>`<option value="${k}" ${k===h?'selected':''}>${pad(k)}:00</option>`).join('');
+  const cells=Array.from({length:24},(_,h)=>{
+    const i=dayIdx(d).find(x=>hr(S.w.t[x])===h);
+    if(i===undefined) return '<div class="n"></div>';
+    const inW=h>=S.win.a && h<=S.win.b;
+    return `<div class="${!inW?'n':fails(i).length?'r':'g'}">${h}</div>`;
+  }).join('');
+  const run=bestRun(d);
+  return `<div class="card"><p class="h">⏰ Mi franja de rodaje</p>
+    <div class="row"><select id="wa">${opts(S.win.a)}</select><select id="wb">${opts(S.win.b)}</select></div>
+    <p class="muted">Se guarda solo 💾</p></div>
+  <div class="card"><div class="days">${ds.map((x,i)=>`<button data-day="${i}" class="${i===S.day?'on':''}">${dayName(x,true)}</button>`).join('')}</div>
+    <div class="strip">${cells}</div>
+    <p class="muted">🟩 rodable · 🟥 no · ⬛ fuera de tu franja</p></div>
+  <div class="card"><p class="h">🏅 Ventana más larga</p>${run.length?`<b>${runText(run)}</b> 🎯 <span class="muted">(${run.length}h seguidas)</span>`:'Ninguna 😵'}</div>`;
+}
+
+function vCiudades(){
+  return `<div class="card"><p class="h">🔎 Buscar localidad</p>
+    <div class="row"><input type="text" id="q" placeholder="Ej: Lugo, Vigo, Oviedo..."><button class="btn" id="qbtn">Buscar</button></div>
+    <div id="qres"></div>
+    <button class="btn ghost" id="geo" style="width:100%;margin-top:10px">📍 Usar mi ubicación</button></div>
+  <div class="card"><p class="h">⭐ Mis favoritas</p>
+    <button class="btn" id="favAdd" style="width:100%">★ Guardar ${esc(S.loc.name)}</button>
+    <div style="margin-top:10px">${S.favs.map((f,i)=>`<div class="row" style="margin:6px 0"><button class="btn ghost" data-fav="${i}">📍 ${esc(f.name)}</button><button class="btn ghost" data-del="${i}" style="flex:0 0 48px">🗑️</button></div>`).join('')||'<span class="muted">Aún ninguna 🐣</span>'}</div>
+    <button class="btn" id="cmp" style="width:100%;margin-top:10px">🏁 Comparar hoy</button>
+    <div id="cmpres"></div></div>`;
+}
+
+function vHistList(){
+  const L=[...S.logs].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!L.length){ $('hstats').innerHTML=''; $('hlist').innerHTML='<p class="muted">Aún sin salidas registradas 🐣</p>'; return; }
+  const avg=L.reduce((s,l)=>s+l.exp,0)/L.length;
+  const byWd={};
+  L.forEach(l=>{const wd=new Date(l.date+'T12:00').getDay(); (byWd[wd]=byWd[wd]||[]).push(l.exp);});
+  const bestWd=Object.entries(byWd).map(([k,v])=>({k,a:v.reduce((x,y)=>x+y,0)/v.length})).sort((x,y)=>y.a-x.a)[0];
+  $('hstats').innerHTML=`<div class="card"><p class="h">📊 Tus estadísticas</p><div class="grid">
+    <div class="chip">🏍️<b>${L.length}</b><small>salidas</small></div>
+    <div class="chip">${EXP[Math.round(avg)-1][0]}<b>${avg.toFixed(1)}</b><small>experiencia media</small></div>
+    <div class="chip wide">🏆 Tu día favorito para rodar: <b style="display:inline">${DIAS[bestWd.k]}</b></div></div></div>`;
+  $('hlist').innerHTML=L.map(l=>`<div class="entry">
+    <div class="row"><b>${EXP[l.exp][0]} ${esc(l.place)}</b><span class="muted">${dayName(l.date)}</span></div>
+    <div class="muted" style="margin:6px 0">🌧️ ${l.kpi.r||'–'}% · 💨 ${l.kpi.g||'–'} km/h · 🌡️ ${l.kpi.t||'–'}º · 🥵 ${l.kpi.f||'–'}º</div>
+    ${l.note?`<p style="margin:6px 0">${esc(l.note)}</p>`:''}
+    <button class="btn ghost" data-logdel="${l.id}" style="padding:6px 10px">🗑️ borrar</button></div>`).join('');
+}
+
+const VIEWS={hoy:vHoy,pron:vPron,horas:vHoras,ciudades:vCiudades};
+function renderCur(){
+  if(S.view==='hist'){ vHistList(); return; }
+  if(S.view==='perfil'){ syncProfile(); return; }
+  $('v-'+S.view).innerHTML=VIEWS[S.view]();
+}
+function showView(v){
+  S.view=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  document.querySelectorAll('.drawer button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('title').textContent=TITLES[v];
+  $('drawer').classList.remove('open'); $('scrim').classList.remove('open');
+  renderCur(); window.scrollTo(0,0);
+}
+
+/* ---------- PERFIL / HISTORIAL ---------- */
+function syncProfile(){
+  for(const [id,k] of Object.entries(MAP)){
+    $(id).value=S.P[k];
+    $('l'+id).textContent=S.P[k]+UNI[id];
+  }
+  $('pn').checked=!!S.P.noNorth;
+}
+function prefill(){
+  if(!S.w) return;
+  const d=$('hDate').value||todayKey();
+  if(!days().includes(d)){ ['kR','kG','kT','kF'].forEach(id=>$(id).value=''); return; }
+  const ix=winIdx(d).length?winIdx(d):dayIdx(d), st=dayStats(ix);
+  $('kR').value=st.rain; $('kG').value=Math.round(st.gust);
+  $('kT').value=Math.round(st.tmax); $('kF').value=Math.round(st.fmax);
+  if(!$('hPlace').value) $('hPlace').value=S.loc.name;
+}
+function saveLog(){
+  S.logs.unshift({id:Date.now(), date:$('hDate').value||todayKey(), place:$('hPlace').value||S.loc.name,
+    exp:S.exp, note:$('hNote').value.trim(),
+    kpi:{r:$('kR').value,g:$('kG').value,t:$('kT').value,f:$('kF').value}});
+  save(); $('hNote').value=''; vHistList();
+}
+
+/* ---------- CIUDADES ---------- */
+async function search(){
+  const q=$('q').value.trim(); if(!q) return;
+  $('qres').innerHTML='<p class="muted">🔍 buscando...</p>';
+  try{
+    const j=await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=es&format=json`)).json();
+    S.found=j.results||[];
+    $('qres').innerHTML=S.found.length
+      ? S.found.map((c,i)=>`<button class="btn ghost" data-ql="${i}" style="width:100%;margin:6px 0;text-align:left">📍 ${esc(c.name)} <span class="muted">${esc(c.admin1||'')} ${esc(c.country||'')}</span></button>`).join('')
+      : '<p class="muted">Nada 🤷 prueba otro nombre</p>';
+  }catch(e){ $('qres').innerHTML='<p class="muted">Sin conexión 🌩️</p>'; }
+}
+async function compare(){
+  const box=$('cmpres');
+  if(!S.favs.length){ box.innerHTML='<p class="muted">Guarda alguna favorita primero 🐣</p>'; return; }
+  box.innerHTML='<p class="muted">🔭 Mirando las nubes de cada una...</p>';
+  const res=[];
+  for(const f of S.favs){
+    try{
+      const w=await getWeather(f.lat,f.lon);
+      const keep=S.w; S.w=w;
+      const td=todayKey(), ix=winIdx(td);
+      const r={name:f.name, s:score(td), rain:ix.length?dayStats(ix).rain:'–', gust:ix.length?Math.round(dayStats(ix).gust):'–'};
+      S.w=keep; res.push(r);
+    }catch(e){ res.push({name:f.name,err:true}); }
+  }
+  res.sort((a,b)=>(b.s||0)-(a.s||0));
+  box.innerHTML=res.map(r=>r.err?`<div class="row" style="margin:6px 0"><span>${esc(r.name)}</span><span class="muted">🌩️</span></div>`
+    :`<div class="dcard ${r.s>=.8?'best':''}"><div class="row"><b>${esc(r.name)}</b><span>${r.s>=.8?'🏍️ SÍ':r.s>=.5?'🤔 Dudoso':'🛑 NO'}</span></div>
+      <div class="muted">🌧️ ${r.rain}% · 💨 ${r.gust} km/h · ${Math.round(r.s*100)}% OK</div></div>`).join('');
+}
+
+/* ---------- EVENTOS ---------- */
+$('menu').onclick=()=>{ $('drawer').classList.add('open'); $('scrim').classList.add('open'); };
+$('scrim').onclick=()=>{ $('drawer').classList.remove('open'); $('scrim').classList.remove('open'); };
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button'); if(!t) return;
+  const D=t.dataset;
+  if(D.v) showView(D.v);
+  else if(D.m){ S.mode=D.m; renderCur(); }
+  else if(D.day!==undefined){ S.day=+D.day; renderCur(); }
+  else if(D.fav!==undefined){ loadLoc(S.favs[+D.fav]); showView('hoy'); }
+  else if(D.del!==undefined){ S.favs.splice(+D.del,1); save(); renderCur(); }
+  else if(D.ql!==undefined){ const c=S.found[+D.ql];
+    loadLoc({name:c.name+(c.admin1?', '+c.admin1:''),lat:c.latitude,lon:c.longitude}); showView('hoy'); }
+  else if(D.exp!==undefined){ S.exp=+D.exp; document.querySelectorAll('#hExp button').forEach((b,i)=>b.classList.toggle('on',i===S.exp)); }
+  else if(D.logdel!==undefined){ S.logs=S.logs.filter(l=>l.id!=D.logdel); save(); vHistList(); }
+  else if(t.id==='retry') loadLoc(S.loc);
+  else if(t.id==='qbtn') search();
+  else if(t.id==='geo') navigator.geolocation && navigator.geolocation.getCurrentPosition(p=>{loadLoc({name:'Mi ubicación',lat:p.coords.latitude,lon:p.coords.longitude});showView('hoy');},()=>alert('No pude leer tu ubicación 📍'));
+  else if(t.id==='favAdd'){ if(!S.favs.some(f=>f.name===S.loc.name)) S.favs.push({name:S.loc.name,lat:S.loc.lat,lon:S.loc.lon}); save(); renderCur(); }
+  else if(t.id==='cmp') compare();
+  else if(t.id==='hsave'){ saveLog(); }
+  else if(t.id==='preset'){ S.P=Object.assign({},DEF); save(); syncProfile(); renderCur(); }
+});
+document.addEventListener('input',e=>{
+  if(MAP[e.target.id]){ S.P[MAP[e.target.id]]=+e.target.value; save(); syncProfile(); }
+});
+document.addEventListener('change',e=>{
+  const id=e.target.id;
+  if(id==='pn'){ S.P.noNorth=$('pn').checked; save(); }
+  if(id==='hDate') prefill();
+  if(id==='wa'||id==='wb'){ S.win.a=+$('wa').value; S.win.b=+$('wb').value; if(S.win.b<S.win.a) S.win.b=S.win.a; save(); renderCur(); }
+});
+
+/* ---------- ARRANQUE ---------- */
+$('hDate').value=todayKey();
+syncProfile();
+showView('hoy');
+loadLoc(S.loc);
+</script>
+</body>
+</html>
