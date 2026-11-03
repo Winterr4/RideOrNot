@@ -1,2 +1,3 @@
 # RideOrNot
-Biker weather app
+
+A weather app that provides real-time weather forecasts and evaluates whether riding conditions are safe and suitable for bikers, helping riders plan their journeys with confidence.
